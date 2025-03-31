@@ -8,7 +8,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class HistorialQuejaDTO {
-    private Long id;
     private Long quejaId;
     private String estadoAnterior;
     private String estadoNuevo;

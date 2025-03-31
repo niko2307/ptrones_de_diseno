@@ -29,7 +29,7 @@ public class SecurityConfig {
                 .requestMatchers("/auth/**").permitAll()
 
                 // USER: puede registrar y ver sus quejas
-                .requestMatchers("/quejas/registrar", "/quejas/usuario/**").hasRole("  CIUDADANO")
+                .requestMatchers("/quejas/registrar", "/quejas/usuario/**").hasRole("CIUDADANO")
 
                 // EMPRESA: puede consultar quejas por estado o asignadas
                 .requestMatchers("/quejas/estado/**").hasRole("EMPRESA_VIGILADA")
