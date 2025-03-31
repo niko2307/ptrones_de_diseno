@@ -20,6 +20,7 @@ import com.javeriana.patrones.repository.EmpresaVigiladaRepository;
 import com.javeriana.patrones.repository.QuejaRepository;
 import com.javeriana.patrones.repository.UsuarioRepository;
 import com.javeriana.patrones.services.QuejaService;
+import com.javeriana.patrones.strategy.StrategyContext;
 
 import jakarta.persistence.EntityNotFoundException;
 @Service
@@ -29,19 +30,22 @@ public class QuejaServiceImpl implements QuejaService {
     private final EmpresaVigiladaRepository empresaRepository;
     private final UsuarioRepository usuarioRepository;
     private final GestorNotificaciones gestorNotificaciones; 
+    private final StrategyContext strategyContext;
 
 public QuejaServiceImpl(
         QuejaRepository repository,
         EmpresaVigiladaRepository empresaRepository,
         UsuarioRepository usuarioRepository,
         ModelMapper modelMapper,
-        GestorNotificaciones gestorNotificaciones 
+        GestorNotificaciones gestorNotificaciones, 
+        StrategyContext strategyContext
     ) {
         this.repository = repository;
         this.empresaRepository = empresaRepository;
         this.usuarioRepository = usuarioRepository;
         this.modelMapper = modelMapper;
         this.gestorNotificaciones = gestorNotificaciones;
+        this.strategyContext = strategyContext;
         this.gestorNotificaciones.agregarObservador(new ObservadorConsola());
          this.gestorNotificaciones.agregarObservador(new ObservadorCorreo());
 
@@ -74,6 +78,7 @@ public QuejaServiceImpl(
             "NUEVA_QUEJA"
         );
         gestorNotificaciones.notificarObservadores(evento);
+        strategyContext.enrutar(guardada);
     
         return modelMapper.map(guardada, QuejaDTO.class);
     }
