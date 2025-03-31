@@ -8,6 +8,8 @@ import org.springframework.stereotype.Service;
 
 import com.javeriana.patrones.Dtos.EmpresaDTO;
 import com.javeriana.patrones.model.EmpresaVigilada;
+import com.javeriana.patrones.observer.EventoNotificacion;
+import com.javeriana.patrones.observer.GestorNotificaciones;
 import com.javeriana.patrones.repository.EmpresaVigiladaRepository;
 import com.javeriana.patrones.services.EmpresaVigiladaService;
 
@@ -16,16 +18,31 @@ import jakarta.persistence.EntityNotFoundException;
 public class EmpresaVigiladaServiceImpl implements EmpresaVigiladaService {
     private final EmpresaVigiladaRepository repository;
     private final ModelMapper modelMapper;
+    private final GestorNotificaciones gestorNotificaciones;
 
-    public EmpresaVigiladaServiceImpl(EmpresaVigiladaRepository repository, ModelMapper modelMapper) {
+    public EmpresaVigiladaServiceImpl(
+        EmpresaVigiladaRepository repository,
+        ModelMapper modelMapper,
+        GestorNotificaciones gestorNotificaciones
+    ) {
         this.repository = repository;
         this.modelMapper = modelMapper;
+        this.gestorNotificaciones = gestorNotificaciones;
     }
-
     @Override
     public EmpresaDTO registrarEmpresa(EmpresaDTO dto) {
         EmpresaVigilada empresa = modelMapper.map(dto, EmpresaVigilada.class);
-        return modelMapper.map(repository.save(empresa), EmpresaDTO.class);
+        EmpresaVigilada guardada = repository.save(empresa);
+
+        // Notificación simulada
+        EventoNotificacion evento = new EventoNotificacion(
+            "🏢 Nueva empresa vigilada registrada: " + guardada.getNombre(),
+            "empresa@correo.com",
+            "REGISTRO_EMPRESA"
+        );
+        gestorNotificaciones.notificarObservadores(evento);
+
+        return modelMapper.map(guardada, EmpresaDTO.class);
     }
 
     @Override

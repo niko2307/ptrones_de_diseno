@@ -12,6 +12,10 @@ import com.javeriana.patrones.model.EmpresaVigilada;
 import com.javeriana.patrones.model.EstadoQueja;
 import com.javeriana.patrones.model.Queja;
 import com.javeriana.patrones.model.Usuario;
+import com.javeriana.patrones.observer.EventoNotificacion;
+import com.javeriana.patrones.observer.GestorNotificaciones;
+import com.javeriana.patrones.observer.ObservadorConsola;
+import com.javeriana.patrones.observer.ObservadorCorreo;
 import com.javeriana.patrones.repository.EmpresaVigiladaRepository;
 import com.javeriana.patrones.repository.QuejaRepository;
 import com.javeriana.patrones.repository.UsuarioRepository;
@@ -24,39 +28,55 @@ public class QuejaServiceImpl implements QuejaService {
     private final ModelMapper modelMapper;
     private final EmpresaVigiladaRepository empresaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final GestorNotificaciones gestorNotificaciones; 
 
+public QuejaServiceImpl(
+        QuejaRepository repository,
+        EmpresaVigiladaRepository empresaRepository,
+        UsuarioRepository usuarioRepository,
+        ModelMapper modelMapper,
+        GestorNotificaciones gestorNotificaciones 
+    ) {
+        this.repository = repository;
+        this.empresaRepository = empresaRepository;
+        this.usuarioRepository = usuarioRepository;
+        this.modelMapper = modelMapper;
+        this.gestorNotificaciones = gestorNotificaciones;
+        this.gestorNotificaciones.agregarObservador(new ObservadorConsola());
+         this.gestorNotificaciones.agregarObservador(new ObservadorCorreo());
 
-    public QuejaServiceImpl(QuejaRepository repository, 
-    EmpresaVigiladaRepository empresaRepository,
-    UsuarioRepository usuarioRepository,
-    ModelMapper modelMapper) {
-this.repository = repository;
-this.empresaRepository = empresaRepository;
-this.usuarioRepository = usuarioRepository;
-this.modelMapper = modelMapper;
-}
+    
+    }
 
    
-  @Override
-public QuejaDTO registrarQueja(QuejaDTO dto) {
-    Queja queja = new Queja();
-
-    // Asignar campos simples
-    queja.setDescripcion(dto.getDescripcion());
-    queja.setEstado(EstadoQueja.valueOf(dto.getEstado().toUpperCase()));
-    queja.setFechaRegistro(LocalDateTime.now());
-
-    // Asignar relaciones desde los IDs
-    EmpresaVigilada empresa = empresaRepository.findById(dto.getEmpresaId())
+    @Override
+    public QuejaDTO registrarQueja(QuejaDTO dto) {
+        Queja queja = new Queja();
+    
+        queja.setDescripcion(dto.getDescripcion());
+        queja.setEstado(EstadoQueja.valueOf(dto.getEstado().toUpperCase()));
+        queja.setFechaRegistro(LocalDateTime.now());
+    
+        EmpresaVigilada empresa = empresaRepository.findById(dto.getEmpresaId())
             .orElseThrow(() -> new EntityNotFoundException("Empresa no encontrada"));
-    queja.setEmpresaVigilada(empresa);
-
-    Usuario usuario = usuarioRepository.findById(dto.getUsuarioId())
+        queja.setEmpresaVigilada(empresa);
+    
+        Usuario usuario = usuarioRepository.findById(dto.getUsuarioId())
             .orElseThrow(() -> new EntityNotFoundException("Usuario no encontrado"));
-    queja.setUsuario(usuario);
-
-    return modelMapper.map(repository.save(queja), QuejaDTO.class);
-}
+        queja.setUsuario(usuario);
+    
+        Queja guardada = repository.save(queja);
+    
+        // Notificación a la empresa
+        EventoNotificacion evento = new EventoNotificacion(
+            "📢 Se ha registrado una nueva queja contra su empresa '" + empresa.getNombre() + "' por el usuario " + usuario.getNombre(),
+            "empresa@" + empresa.getNombre().toLowerCase() + ".com",  // correo simulado
+            "NUEVA_QUEJA"
+        );
+        gestorNotificaciones.notificarObservadores(evento);
+    
+        return modelMapper.map(guardada, QuejaDTO.class);
+    }
 
 
     @Override
