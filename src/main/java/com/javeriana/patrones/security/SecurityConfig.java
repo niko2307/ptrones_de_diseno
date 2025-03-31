@@ -25,7 +25,19 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.csrf(csrf -> csrf.disable())
             .authorizeHttpRequests(auth -> auth
+                // Rutas públicas
                 .requestMatchers("/auth/**").permitAll()
+
+                // USER: puede registrar y ver sus quejas
+                .requestMatchers("/quejas/registrar", "/quejas/usuario/**").hasRole("  CIUDADANO")
+
+                // EMPRESA: puede consultar quejas por estado o asignadas
+                .requestMatchers("/quejas/estado/**").hasRole("EMPRESA_VIGILADA")
+
+                // ADMIN: puede acceder a todas las empresas y todos los historiales
+                .requestMatchers("/empresas/**", "/historial/**", "/quejas/id/**").hasRole("ADMIN")
+
+                // Cualquier otra ruta requiere autenticación
                 .anyRequest().authenticated()
             )
             .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
